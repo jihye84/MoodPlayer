@@ -2,6 +2,46 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
+<script>
+/* 카카오톡·네이버·페이스북·인스타그램·라인·밴드 등 앱 안 브라우저로 열리면 기본 브라우저(크롬·사파리)로 다시 열기 */
+(function () {
+  if (window.top !== window.self) return;
+  var ua = navigator.userAgent || '';
+  var url = location.href;
+  var inApp = /KAKAOTALK|KAKAOSTORY|NAVER\(inapp|NAVER\/|FBAN|FBAV|FB_IAB|FBIOS|Instagram|\bLine\/|DaumApps|BAND\/|everytimeApp|Whale\/[\d.]+ .*inapp|; wv\)/i.test(ua);
+  if (!inApp) return;
+  if (/KAKAOTALK/i.test(ua)) { location.href = 'kakaotalk://web/openExternal?url=' + encodeURIComponent(url); return; }
+  if (/\bLine\//i.test(ua)) {
+    if (url.indexOf('openExternalBrowser=1') < 0) location.href = url + (url.indexOf('?') < 0 ? '?' : '&') + 'openExternalBrowser=1';
+    return;
+  }
+  if (/Android/i.test(ua)) {
+    location.href = 'intent://' + url.replace(/^https?:\/\//, '') + '#Intent;scheme=https;package=com.android.chrome;end';
+    return;
+  }
+  // 아이폰의 앱 안 브라우저는 사파리로 바로 넘길 수 없어 안내 화면을 띄움
+  document.addEventListener('DOMContentLoaded', function () {
+    var box = document.createElement('div');
+    box.setAttribute('role', 'dialog');
+    box.style.cssText = 'position:fixed;inset:0;z-index:2147483647;background:rgba(20,24,32,.94);color:#f2f3f6;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;text-align:center;font:15px/1.6 -apple-system,system-ui,sans-serif;word-break:keep-all';
+    box.innerHTML = '<strong style="font-size:18px">사파리에서 열어 주세요</strong>' +
+      '<span>이 앱 안의 브라우저에서는 소리나 화면이 제대로 작동하지 않을 수 있어요.<br>오른쪽 아래 ⋯ 또는 공유 버튼에서 <b>Safari로 열기</b>를 눌러 주세요.</span>' +
+      '<button type="button" data-a="copy" style="font:inherit;padding:10px 20px;border-radius:999px;border:0;background:#f2f3f6;color:#141820">주소 복사</button>' +
+      '<button type="button" data-a="stay" style="font:inherit;background:none;border:0;color:#aab0bd;text-decoration:underline">그냥 여기서 보기</button>';
+    box.addEventListener('click', function (e) {
+      var a = e.target.getAttribute && e.target.getAttribute('data-a');
+      if (a === 'stay') box.remove();
+      if (a === 'copy') {
+        var b = e.target;
+        (navigator.clipboard ? navigator.clipboard.writeText(url) : Promise.reject()).then(
+          function () { b.textContent = '복사했어요'; },
+          function () { window.prompt('주소를 복사해 사파리에 붙여 넣어 주세요', url); });
+      }
+    });
+    document.body.appendChild(box);
+  });
+})();
+</script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mood Player</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
@@ -177,6 +217,28 @@
         #remix-btn:hover { color: #333; background: #f9f9f9; }
 
         #status { font-size: 0.85em; color: #999; margin-top: 20px; min-height: 20px; }
+    
+        /* ── 어떤 화면에서도 스크롤 없이 한 화면에 ── */
+        html, body { overflow: hidden; }
+        body { box-sizing: border-box; height: 100vh; height: 100dvh; padding: clamp(6px, 2vh, 20px) clamp(8px, 3vw, 24px); }
+        h1 { margin: 0 0 clamp(6px, 2.4vh, 25px); font-size: clamp(1.3rem, 4.4vh, 2rem); }
+        .panel { max-width: 100%; box-sizing: border-box; padding: clamp(10px, 2.4vh, 25px) clamp(10px, 3vw, 30px); margin-bottom: clamp(6px, 2vh, 20px); gap: clamp(6px, 1.4vh, 15px); }
+        .selectors { flex-wrap: wrap; justify-content: center; gap: clamp(6px, 1.2vh, 12px); }
+        select { padding: clamp(5px, 1vh, 10px) clamp(6px, 1.4vw, 14px); max-width: 42vw; }
+        #canvas-container { width: min(800px, 100%, calc((100dvh - 330px) * 3.2)); height: auto; aspect-ratio: 800 / 250; min-width: 240px; margin-bottom: clamp(6px, 1.5vh, 15px); flex: none; }
+        #canvas-container canvas { width: 100%; height: 100%; }
+        #mood-display { height: auto; min-height: clamp(30px, 6vh, 60px); margin-bottom: clamp(4px, 1.5vh, 15px); gap: clamp(4px, 1vh, 12px); }
+        .mood-word { padding: clamp(4px, 0.8vh, 8px) clamp(8px, 1.6vw, 16px); }
+        .controls { flex-wrap: wrap; justify-content: center; max-width: 100%; box-sizing: border-box; gap: clamp(6px, 1.2vw, 12px); padding: clamp(6px, 1vh, 10px) clamp(10px, 2vw, 20px); margin-top: clamp(4px, 1vh, 10px); }
+        .controls button { padding: clamp(8px, 1.4vh, 12px) clamp(12px, 2.4vw, 24px); }
+        @media (max-height: 460px) {
+            h1 { font-size: 1.1rem; margin-bottom: 4px; }
+            .panel label { display: none; }
+        }
+        @media (max-width: 520px) {
+            .controls { border-radius: 24px; }
+            #resume-btn { min-width: 0; }
+        }
     </style>
 </head>
 <body>
